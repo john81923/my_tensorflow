@@ -28,7 +28,6 @@ def label_to_vec(labels):
 def _main():
     # paths 
     ids_path = '../data/VOCdevkit/VOC2007/ImageSets/Main/'
-    eval_path =  '../data/VOCdevkit/VOC2007/ImageSets/Main/val.txt'
     anno_path = '../data/VOCdevkit/VOC2007/Annotations/'
     image_path = '../data/VOCdevkit/VOC2007/JPEGImages/'
     category = 'trainval'
@@ -38,33 +37,14 @@ def _main():
         ids = []
         for line in f:
             ids.append(line[0:6])
-    with open(eval_path) as ef:
-        eval_ids = []
-        for line in ef:
-            eval_ids.append(line[0:6])
     #ids =np.asarray(ids, dtype='int')
     #np.random.shuffle(ids)
     data_num = len(ids)
-    anno_dir_ = os.path.join(anno_path, '{}.xml'.format(ids[2]) )
-    image_dir_ = os.path.join(image_path , '{}.jpg'.format(ids[2]))
     #
     # path to img and labels
-    image_data_eval , label_vec_eval = img_n_label( image_dir_, anno_dir_ ) 
-    image_data_eval = image_data_eval.reshape( (1,224,224,3) )
     #
     print 'data_num : ', data_num
     print len(DataFunc.classes) , DataFunc.classes
-    # eval data and labels
-    eval_dbatch = []
-    eval_lbatch = []
-    for i in range(100):
-        anno_dir_eval = os.path.join(anno_path, '{}.xml'.format( eval_ids[ i]) )
-        image_dir_eval = os.path.join(image_path, '{}.jpg'.format( eval_ids[ i]) )
-        eval_data ,eval_label =  img_n_label ( image_dir_eval, anno_dir_eval )
-        eval_dbatch.append(eval_data)
-        eval_lbatch.append(eval_label)
-    eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
-    eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
     # train session 
     batch_size = 32
     
@@ -106,6 +86,25 @@ def _main():
         eval_model(sess)
 
 def eval_model(sess):
+    eval_path =  '../data/VOCdevkit/VOC2007/ImageSets/Main/val.txt'
+    anno_path = '../data/VOCdevkit/VOC2007/Annotations/'
+    image_path = '../data/VOCdevkit/VOC2007/JPEGImages/'
+    # eval data and labels
+    with open(eval_path) as ef:
+        eval_ids = []
+        for line in ef:
+            eval_ids.append(line[0:6])
+    batch_size = 32 
+    eval_dbatch = []
+    eval_lbatch = []
+    for i in range(100):
+        anno_dir_eval = os.path.join(anno_path, '{}.xml'.format( eval_ids[ i]) )
+        image_dir_eval = os.path.join(image_path, '{}.jpg'.format( eval_ids[ i]) )
+        eval_data ,eval_label =  img_n_label ( image_dir_eval, anno_dir_eval )
+        eval_dbatch.append(eval_data)
+        eval_lbatch.append(eval_label)
+    eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
+    eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
     prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
     #utils.print_prob( prob[0], './synset.txt' )
     probs =   probs_threshold(prob)
