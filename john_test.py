@@ -66,13 +66,13 @@ def _main():
     eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
     eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
     # train session 
-    batch_size = 100
+    batch_size = 32
     
     sess = tf.Session()
     # 
     # placeholders
-    images = tf.placeholder( tf.float32, [None, 224,224,3])
-    true_out = tf.placeholder( tf.float32, [None, 20])
+    images = tf.placeholder( tf.float32, [batch_size, 224,224,3])
+    true_out = tf.placeholder( tf.float32, [batch_size, 20])
     train_mode = tf.placeholder( tf.bool )
     #
     # vgg19 model
