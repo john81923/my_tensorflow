@@ -103,15 +103,16 @@ def _main():
         # run
         sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
         # evaluate
+        eval_model(sess)
 
-        prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
-        #utils.print_prob( prob[0], './synset.txt' )
-        probs =   probs_threshold(prob)
-        y_ = tf.placeholder(tf.float32, [None, 20])
-        correct_prediction = tf.equal( probs ,y_)
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        print(sess.run(accuracy, feed_dict={images: eval_dbatch, y_: eval_lbatch }))
-
+def eval_model(sess):
+    prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
+    #utils.print_prob( prob[0], './synset.txt' )
+    probs =   probs_threshold(prob)
+    y_ = tf.placeholder(tf.float32, [None, 20])
+    correct_prediction = tf.equal( probs ,y_)
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    print(sess.run(accuracy, feed_dict={images: eval_dbatch, y_: eval_lbatch }))
 
     vgg.save_npy( sess, './synset.txt' )
 
