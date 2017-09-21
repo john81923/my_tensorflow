@@ -61,11 +61,13 @@ def _main():
     vgg = vgg19.Vgg19('/home/master/05/john81923/vgg19.npy')
     vgg.build(images, train_mode)
     print  'var count : ', vgg.get_var_count()
-    sess.run( tf.global_variables_initializer())
     # cost
     cost = tf.reduce_sum(( vgg.prob - true_out)**2 )
     # train
-    train = tf.train.GradientDescentOptimizer( 0.0001).minimize( cost)
+    #train = tf.train.GradientDescentOptimizer( 0.0001).minimize( cost)
+    #tf.train.AdadeltaOptimizer.init(learning_rate=0.001, rho=0.95, epsilon=1e-08, use_locking=False, name='Adadelta')
+    train =tf.train.AdamOptimizer(1e-3).minimize( cost)
+    sess.run( tf.global_variables_initializer())
     # data and labels to batches for train
     print 'epoch_total = ', data_num / batch_size 
     for epoch in range(200):
@@ -77,7 +79,7 @@ def _main():
             label_batch = []
             rand_list = []
             for rand in range (batch_size):
-               rand_list.append( random.randint( 0, data_num ) )
+               rand_list.append( random.randint( 0, data_num-1 ) )
             for j in range (batch_size):
                 j_id = rand_list[ j ]
                 anno_dir_ = os.path.join(anno_path, '{}.xml'.format( ids[ j_id ]) )
@@ -88,11 +90,13 @@ def _main():
             image_batch = np.asarray(image_batch, dtype = 'float' )
             label_batch = np.asarray(label_batch, dtype = 'float' )
             # run
-            #sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
-        # evaluate
-        eval_model(sess ,vgg , images, train_mode)
+            sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
+            if (i+1)%70 == 0 :
+                # evaluate
+                eval_model(sess ,vgg , images, train_mode)
 
 def eval_model(sess, vgg , images , train_mode):
+    print 'start eval '
     eval_path =  '../data/VOCdevkit/VOC2007/ImageSets/Main/val.txt'
     anno_path = '../data/VOCdevkit/VOC2007/Annotations/'
     image_path = '../data/VOCdevkit/VOC2007/JPEGImages/'
@@ -102,8 +106,10 @@ def eval_model(sess, vgg , images , train_mode):
         for line in ef:
             eval_ids.append(line[0:6])
     batch_size = 32 
+    batch_size_f = 32.
     acc_accumlate = 0.
     eval_num = len( eval_ids )/batch_size
+    eval_num_f = len( eval_ids )/batch_size_f
     for j in range ( eval_num ):
         eval_dbatch = []
         eval_lbatch = []
@@ -117,26 +123,40 @@ def eval_model(sess, vgg , images , train_mode):
         eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
         eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
         prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
-        probs =  probs_threshold(prob)
+        probs =  probs_threshold2(prob)
         p_ = tf.placeholder(tf.float32, [None, 20])
         y_ = tf.placeholder(tf.float32, [None, 20])
-        correct_prediction = tf.equal( p_ ,y_)
-        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        acc_accumlate += sess.run( accuracy, feed_dict={ p_: probs , y_: eval_lbatch })
-    print acc_accumlate / eval_num
+        print probs.shape
+        print eval_lbatch.shape
+        #correct_prediction = tf.equal( p_ ,y_)
+        #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        #acc_accumlate += sess.run( accuracy, feed_dict={ p_: probs , y_: eval_lbatch })
+        topFiver = tf.nn.in_top_k( eval_lbatch ,probs ,1 )
+        acc = sess.run(topFiver)
+        acc_accumlate += sum( acc )/batch_size_f    
+    print acc_accumlate / eval_num_f
     vgg.save_npy( sess, './synset.txt' )
 
 def probs_threshold(probs):
     a = 0
     b = np.zeros(20)
     for i in range(probs.shape[0]):
-        #probs[i] = stats.threshold(probs[i], threshmin=0.1, newval=0)
-        #probs[i] = stats.threshold(probs[i], threshmax=0.1, newval=1)
         idx = np.argmax( probs[i] )
-        b[idx] = 1
-        probs[i] = b
-        a += np.count_nonzero(probs[i])
+        #ddb[idx] = 1
+        probs[i] = idx
+        #a += np.count_nonzero(probs[i])
     return probs
+
+def probs_threshold2(probs):
+    a = 0
+    b = np.zeros(probs.shape[0])
+    for i in range(probs.shape[0]):
+        idx = np.argmax( probs[i] )
+        #ddb[idx] = 1
+        b[i] = idx
+        #a += np.count_nonzero(probs[i])
+    return b
+
 
 if __name__ == '__main__':
     _main()
