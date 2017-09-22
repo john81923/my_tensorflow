@@ -4,7 +4,8 @@ from sklearn import metrics
 
 
 sess = tf.Session()
-def probs_threshold(probs):
+
+def probs_threshold2(probs):
     a = 0
     b = np.zeros(probs.shape[0])
     for i in range(probs.shape[0]):
@@ -14,14 +15,18 @@ def probs_threshold(probs):
         #a += np.count_nonzero(probs[i])
     return b
 
-input_ = np.random.rand(2,5)
+
+
+
+
+input_ = np.random.rand(4,5)
 print input_
-pre_ =  probs_threshold(input_)
+pre_ =  probs_thresholdi2(input_)
 print pre_
 
 
-probs = [4,1 ]
-eval_y = [ [0,0,0,1,1] , [1,0,1,0,0] ]
+probs = [4, 1 ,4]
+eval_y = [ [0,0,0,1,1] ,[0,0,1,1,0],  [1,0,1,0,0],[2,1,0,0,0] ]
 print eval_y
 p_ = tf.placeholder(tf.float32, [2, 5])
 y_ = tf.placeholder(tf.float32, [2, 5])
@@ -31,7 +36,7 @@ topFiver = tf.nn.in_top_k(eval_y ,pre_ ,1 )
 #correct_prediction = tf.equal( p_ ,y_)
 #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 bool_ =  sess.run( topFiver)
-print sum(bool_)/2.
+print sum(bool_)/4.
 
 yy = [ [0,0,0,1,1  ],[1,0,0,0,0] ]
 

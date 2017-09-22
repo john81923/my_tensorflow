@@ -90,10 +90,7 @@ def _main():
             image_batch = np.asarray(image_batch, dtype = 'float' )
             label_batch = np.asarray(label_batch, dtype = 'float' )
             # run
-            sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
-            if (i+1)%70 == 0 :
-                # evaluate
-                eval_model(sess ,vgg , images, train_mode)
+            #sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
 
 def eval_model(sess, vgg , images , train_mode):
     print 'start eval '
@@ -124,15 +121,13 @@ def eval_model(sess, vgg , images , train_mode):
         eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
         prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
         probs =  probs_threshold2(prob)
-        p_ = tf.placeholder(tf.float32, [None, 20])
-        y_ = tf.placeholder(tf.float32, [None, 20])
-        print probs.shape
-        print eval_lbatch.shape
+        p_ = tf.placeholder(tf.float32, [32])
+        y_ = tf.placeholder(tf.float32, [32, 20])
         #correct_prediction = tf.equal( p_ ,y_)
         #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         #acc_accumlate += sess.run( accuracy, feed_dict={ p_: probs , y_: eval_lbatch })
-        topFiver = tf.nn.in_top_k( eval_lbatch ,probs ,1 )
-        acc = sess.run(topFiver)
+        topFiver = tf.nn.in_top_k( y_ ,p_ ,2 )
+        acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, x_:probs })
         acc_accumlate += sum( acc )/batch_size_f    
     print acc_accumlate / eval_num_f
     vgg.save_npy( sess, './synset.txt' )
