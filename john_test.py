@@ -64,9 +64,9 @@ def _main():
     # cost
     cost = tf.reduce_sum(( vgg.prob - true_out)**2 )
     # train
-    #train = tf.train.GradientDescentOptimizer( 0.0001).minimize( cost)
+    train = tf.train.GradientDescentOptimizer( 0.0001).minimize( cost)
     #tf.train.AdadeltaOptimizer.init(learning_rate=0.001, rho=0.95, epsilon=1e-08, use_locking=False, name='Adadelta')
-    train =tf.train.AdamOptimizer(1e-3).minimize( cost)
+    #train =tf.train.AdamOptimizer(1e-1).minimize( cost)
     sess.run( tf.global_variables_initializer())
     # data and labels to batches for train
     print 'epoch_total = ', data_num / batch_size 
@@ -90,7 +90,10 @@ def _main():
             image_batch = np.asarray(image_batch, dtype = 'float' )
             label_batch = np.asarray(label_batch, dtype = 'float' )
             # run
-            #sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
+            sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
+            if (i+1)%60==0:
+                 eval_model(sess, vgg , images , train_mode)
+
 
 def eval_model(sess, vgg , images , train_mode):
     print 'start eval '
@@ -120,14 +123,17 @@ def eval_model(sess, vgg , images , train_mode):
         eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
         eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
         prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
+        #print 'probs ',prob
         probs =  probs_threshold2(prob)
-        p_ = tf.placeholder(tf.float32, [32])
+        print 'probs ',probs
+        p_ = tf.placeholder(tf.int32, [32])
         y_ = tf.placeholder(tf.float32, [32, 20])
         #correct_prediction = tf.equal( p_ ,y_)
         #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         #acc_accumlate += sess.run( accuracy, feed_dict={ p_: probs , y_: eval_lbatch })
-        topFiver = tf.nn.in_top_k( y_ ,p_ ,2 )
-        acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, x_:probs })
+        topFiver = tf.nn.in_top_k( y_ ,p_ ,1 )
+        acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, p_:probs })
+        print 'acc ', acc
         acc_accumlate += sum( acc )/batch_size_f    
     print acc_accumlate / eval_num_f
     vgg.save_npy( sess, './synset.txt' )
