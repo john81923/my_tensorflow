@@ -28,6 +28,7 @@ def label_to_vec(labels):
             l_arr[ int(i) ] += 1  
     return l_arr
 
+
 def _main():
     # paths 
     ids_path = '../data/VOCdevkit/VOC2007/ImageSets/Main/'
@@ -58,7 +59,8 @@ def _main():
     train_mode = tf.placeholder( tf.bool )
     #
     # vgg19 model
-    vgg = vgg19.Vgg19('/home/master/05/john81923/vgg19.npy')
+    #vgg = vgg19.Vgg19('/home/master/05/john81923/vgg19.npy')
+    vgg = vgg19.Vgg19( './epoch39.npy' )
     vgg.build(images, train_mode)
     print  'var count : ', vgg.get_var_count()
     # cost
@@ -120,12 +122,17 @@ def eval_model(sess, vgg , images , train_mode):
             eval_data ,eval_label =  img_n_label ( image_dir_eval, anno_dir_eval )
             eval_dbatch.append(eval_data)
             eval_lbatch.append(eval_label)
+            test_data = eval_data
         eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
         eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
         prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
+        pool5 = sess.run(vgg.pool5 ,feed_dict ={ images: eval_dbatch}  )
+        #conv5 shape 32,14,14,512
+        #pool5 shape 32, 7, 7,512
+        print 'pool5 shape ', pool5.shape
         #print 'probs ',prob
         probs =  probs_threshold2(prob)
-        print 'probs ',probs
+        #print 'probs ',probs
         p_ = tf.placeholder(tf.int32, [32])
         y_ = tf.placeholder(tf.float32, [32, 20])
         #correct_prediction = tf.equal( p_ ,y_)
@@ -133,10 +140,10 @@ def eval_model(sess, vgg , images , train_mode):
         #acc_accumlate += sess.run( accuracy, feed_dict={ p_: probs , y_: eval_lbatch })
         topFiver = tf.nn.in_top_k( y_ ,p_ ,1 )
         acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, p_:probs })
-        print 'acc ', acc
         acc_accumlate += sum( acc )/batch_size_f    
     print acc_accumlate / eval_num_f
     vgg.save_npy( sess, './synset.txt' )
+
 
 def probs_threshold(probs):
     a = 0
