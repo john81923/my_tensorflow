@@ -40,8 +40,6 @@ def _main():
         ids = []
         for line in f:
             ids.append(line[0:6])
-    #ids =np.asarray(ids, dtype='int')
-    #np.random.shuffle(ids)
     data_num = len(ids)
     #
     # path to img and labels
@@ -60,16 +58,13 @@ def _main():
     # vgg19 model
     vgg = vgg19.Vgg19('/home/master/05/john81923/vgg19.npy')
     vgg.build(images, train_mode)
-    print  'var count : ', vgg.get_var_count()
     # cost
     cost = tf.reduce_sum(( vgg.prob - true_out)**2 )
     # train
     train = tf.train.GradientDescentOptimizer( 0.0001).minimize( cost)
-    #tf.train.AdadeltaOptimizer.init(learning_rate=0.001, rho=0.95, epsilon=1e-08, use_locking=False, name='Adadelta')
-    #train =tf.train.AdamOptimizer(1e-1).minimize( cost)
     sess.run( tf.global_variables_initializer())
     # data and labels to batches for train
-    print 'epoch_total = ', data_num / batch_size 
+    print 'training start. total_training epoch = ', data_num / batch_size 
     for epoch in range(200):
         print 'epoch {}'.format(epoch)
         shuffle(ids)
@@ -126,6 +121,7 @@ def eval_model(sess, vgg , images , train_mode):
         #print 'probs ',prob
         probs =  probs_threshold2(prob)
         print 'probs ',probs
+        print 'eval ', eval_lbatch
         p_ = tf.placeholder(tf.int32, [32])
         y_ = tf.placeholder(tf.float32, [32, 20])
         #correct_prediction = tf.equal( p_ ,y_)
@@ -161,4 +157,3 @@ def probs_threshold2(probs):
 
 if __name__ == '__main__':
     _main()
-
