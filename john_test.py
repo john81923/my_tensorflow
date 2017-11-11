@@ -126,11 +126,8 @@ def eval_model(sess, vgg , images , train_mode):
         eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
         eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
         prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
-        pool5 = sess.run(vgg.pool5 ,feed_dict ={ images: eval_dbatch}  )
         #conv5 shape 32,14,14,512
         #pool5 shape 32, 7, 7,512
-        print 'pool5 shape ', pool5.shape
-        #print 'probs ',prob
         probs =  probs_threshold2(prob)
         #print 'probs ',probs
         p_ = tf.placeholder(tf.int32, [32])
@@ -164,6 +161,7 @@ def probs_threshold2(probs):
         b[i] = idx
         #a += np.count_nonzero(probs[i])
     return b
+
 
 
 if __name__ == '__main__':
