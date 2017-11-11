@@ -87,7 +87,7 @@ def _main():
             label_batch = np.asarray(label_batch, dtype = 'float' )
             # run
             sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
-            if (i+1)%60==0:
+            if (i+1)%50==0:
                  eval_model(sess, vgg , images , train_mode)
 
 
@@ -106,10 +106,10 @@ def eval_model(sess, vgg , images , train_mode):
     acc_accumlate = 0.
     eval_num = len( eval_ids )/batch_size
     eval_num_f = len( eval_ids )/batch_size_f
-    for j in range ( eval_num ):
+    for j in range (  1 ):
         eval_dbatch = []
         eval_lbatch = []
-        for i in range(batch_size):
+        for i in range( batch_size):
             ids_count = j*batch_size + i
             anno_dir_eval = os.path.join(anno_path, '{}.xml'.format( eval_ids[ ids_count ]) )
             image_dir_eval = os.path.join(image_path, '{}.jpg'.format( eval_ids[ ids_count ]) )
@@ -122,17 +122,18 @@ def eval_model(sess, vgg , images , train_mode):
         prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
         #conv5 shape 32,14,14,512
         #pool5 shape 32, 7, 7,512
-        print 'probs ',prob
+        print 'probs ', prob[2]
+        print 'true_y', eval_lbatch[2]
         #probs =  probs_threshold2(prob)
         #print 'probs ',probs
-        p_ = tf.placeholder(tf.int32, [32])
-        y_ = tf.placeholder(tf.float32, [32, 20])
+        #p_ = tf.placeholder(tf.int32, [32])
+        #y_ = tf.placeholder(tf.float32, [32, 20])
         #correct_prediction = tf.equal( p_ ,y_)
         #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         #acc_accumlate += sess.run( accuracy, feed_dict={ p_: probs , y_: eval_lbatch })
-        topFiver = tf.nn.in_top_k( y_ ,p_ ,1 )
+        #topFiver = tf.nn.in_top_k( y_ ,p_ ,1 )
         #acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, p_:probs })
-        acc_accumlate += sum( acc )/batch_size_f    
+        #acc_accumlate += sum( acc )/batch_size_f    
     #print acc_accumlate / eval_num_f
     #vgg.save_npy( sess, './synset.txt' )
 

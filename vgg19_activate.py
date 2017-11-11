@@ -76,25 +76,26 @@ class Vgg19:
         gap = tf.reduce_mean(self.pool6 , (1,2) )
         gap_w = tf.get_variable('W', shape=[1024, 20], initializer=tf.random_normal_initializer(0., 0.01))
         
-        
-#        self.fc6 = self.fc_layer(self.pool5, 25088, 4096, "fc6")  # 25088 = ((224 // (2 ** 5)) ** 2) * 512
-#        self.relu6 = tf.nn.relu(self.fc6)
-#        if train_mode is not None:
-#            self.relu6 = tf.cond(train_mode, lambda: tf.nn.dropout(self.relu6, self.dropout), lambda: self.relu6)
-#        elif self.trainable:
-#            self.relu6 = tf.nn.dropout(self.relu6, self.dropout)
-#
-#        self.fc7 = self.fc_layer(self.relu6, 4096, 4096, "fc7")
-#        self.relu7 = tf.nn.relu(self.fc7)
-#        if train_mode is not None:
-#            self.relu7 = tf.cond(train_mode, lambda: tf.nn.dropout(self.relu7, self.dropout), lambda: self.relu7)
-#        elif self.trainable:
-#            self.relu7 = tf.nn.dropout(self.relu7, self.dropout)
-#        
-#        #modified class number
-#        self.fc8_new= self.fc_layer(self.relu7, 4096, 20, "fc8_new")
+        #self.fc6 = self.fc_layer(self.pool5, 25088, 4096, "fc6")  # 25088 = ((224 // (2 ** 5)) ** 2) * 512
+        #self.relu6 = tf.nn.relu(self.fc6)
+        #if train_mode is not None:
+        #    self.relu6 = tf.cond(train_mode, lambda: tf.nn.dropout(self.relu6, self.dropout), lambda: self.relu6)
+        #elif self.trainable:
+        #    self.relu6 = tf.nn.dropout(self.relu6, self.dropout)
 
-        self.prob = tf.matmul ( gap, gap_w , name="prob")
+        #self.fc7 = self.fc_layer(self.relu6, 4096, 4096, "fc7")
+        #self.relu7 = tf.nn.relu(self.fc7)
+        #if train_mode is not None:
+        #    self.relu7 = tf.cond(train_mode, lambda: tf.nn.dropout(self.relu7, self.dropout), lambda: self.relu7)
+        #elif self.trainable:
+        #    self.relu7 = tf.nn.dropout(self.relu7, self.dropout)
+        #
+        ##modified class number
+        #self.fc8_new= self.fc_layer(self.relu7, 4096, 20, "fc8_new")
+
+        self.mat = tf.matmul ( gap, gap_w , name="mat")
+
+        self.prob = tf.nn.sigmoid(self.mat, name='prob')
 
         self.data_dict = None
 
