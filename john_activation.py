@@ -41,10 +41,10 @@ def _main():
         ids = []
         for line in f:
             ids.append(line[0:6])
+ 
     data_num = len(ids)
     #
     # path to img and labels
-    #
     print 'data_num : ', data_num
     print len(DataFunc.classes) , DataFunc.classes
     # train session 
@@ -58,14 +58,12 @@ def _main():
     #
     # vgg19 model
     vgg = vgg19.Vgg19('/home/master/05/john81923/vgg19.npy')
-    #vgg = vgg19.Vgg19( './epoch39.npy' )
     vgg.build(images, train_mode)
-    
     # cost
     cost = tf.reduce_sum(( vgg.prob - true_out)**2 )
     # train
     train = tf.train.GradientDescentOptimizer( 0.0001).minimize( cost)
-    sess.run( tf.global_variables_initializer())
+    sess.run( tf.global_variables_initializer() )
     # data and labels to batches for train
     print 'training start. total_training epoch = ', data_num / batch_size 
     for epoch in range(200):
@@ -122,12 +120,10 @@ def eval_model(sess, vgg , images , train_mode):
         eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
         eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
         prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
-        pool5 = sess.run(vgg.pool5 ,feed_dict ={ images: eval_dbatch}  )
         #conv5 shape 32,14,14,512
         #pool5 shape 32, 7, 7,512
-        print 'pool5 shape ', pool5.shape
-        #print 'probs ',prob
-        probs =  probs_threshold2(prob)
+        print 'probs ',prob
+        #probs =  probs_threshold2(prob)
         #print 'probs ',probs
         p_ = tf.placeholder(tf.int32, [32])
         y_ = tf.placeholder(tf.float32, [32, 20])
@@ -135,10 +131,10 @@ def eval_model(sess, vgg , images , train_mode):
         #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         #acc_accumlate += sess.run( accuracy, feed_dict={ p_: probs , y_: eval_lbatch })
         topFiver = tf.nn.in_top_k( y_ ,p_ ,1 )
-        acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, p_:probs })
+        #acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, p_:probs })
         acc_accumlate += sum( acc )/batch_size_f    
-    print acc_accumlate / eval_num_f
-    vgg.save_npy( sess, './synset.txt' )
+    #print acc_accumlate / eval_num_f
+    #vgg.save_npy( sess, './synset.txt' )
 
 
 def probs_threshold(probs):
