@@ -6,7 +6,7 @@ from skimage.transform import resize
 import cv2
 import numpy as np
 import DataFunc 
-import vgg19_trainable as vgg19
+import vgg19_activate as vgg19
 import utils
 from random import shuffle
 import random
@@ -41,10 +41,10 @@ def _main():
         ids = []
         for line in f:
             ids.append(line[0:6])
+ 
     data_num = len(ids)
     #
     # path to img and labels
-    #
     print 'data_num : ', data_num
     print len(DataFunc.classes) , DataFunc.classes
     # train session 
@@ -58,14 +58,12 @@ def _main():
     #
     # vgg19 model
     vgg = vgg19.Vgg19('/home/master/05/john81923/vgg19.npy')
-    #vgg = vgg19.Vgg19( './epoch39.npy' )
     vgg.build(images, train_mode)
-    
     # cost
     cost = tf.reduce_sum(( vgg.prob - true_out)**2 )
     # train
     train = tf.train.GradientDescentOptimizer( 0.0001).minimize( cost)
-    sess.run( tf.global_variables_initializer())
+    sess.run( tf.global_variables_initializer() )
     # data and labels to batches for train
     print 'training start. total_training epoch = ', data_num / batch_size 
     for epoch in range(200):
@@ -89,7 +87,7 @@ def _main():
             label_batch = np.asarray(label_batch, dtype = 'float' )
             # run
             sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
-            if (i+1)%60==0:
+            if (i+1)%50==0:
                  eval_model(sess, vgg , images , train_mode)
 
 
@@ -108,10 +106,10 @@ def eval_model(sess, vgg , images , train_mode):
     acc_accumlate = 0.
     eval_num = len( eval_ids )/batch_size
     eval_num_f = len( eval_ids )/batch_size_f
-    for j in range ( eval_num ):
+    for j in range (  1 ):
         eval_dbatch = []
         eval_lbatch = []
-        for i in range(batch_size):
+        for i in range( batch_size):
             ids_count = j*batch_size + i
             anno_dir_eval = os.path.join(anno_path, '{}.xml'.format( eval_ids[ ids_count ]) )
             image_dir_eval = os.path.join(image_path, '{}.jpg'.format( eval_ids[ ids_count ]) )
@@ -124,18 +122,20 @@ def eval_model(sess, vgg , images , train_mode):
         prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
         #conv5 shape 32,14,14,512
         #pool5 shape 32, 7, 7,512
-        probs =  probs_threshold2(prob)
+        print 'probs ', prob[2]
+        print 'true_y', eval_lbatch[2]
+        #probs =  probs_threshold2(prob)
         #print 'probs ',probs
-        p_ = tf.placeholder(tf.int32, [32])
-        y_ = tf.placeholder(tf.float32, [32, 20])
+        #p_ = tf.placeholder(tf.int32, [32])
+        #y_ = tf.placeholder(tf.float32, [32, 20])
         #correct_prediction = tf.equal( p_ ,y_)
         #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         #acc_accumlate += sess.run( accuracy, feed_dict={ p_: probs , y_: eval_lbatch })
-        topFiver = tf.nn.in_top_k( y_ ,p_ ,1 )
-        acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, p_:probs })
-        acc_accumlate += sum( acc )/batch_size_f    
-    print acc_accumlate / eval_num_f
-    vgg.save_npy( sess, './synset.txt' )
+        #topFiver = tf.nn.in_top_k( y_ ,p_ ,1 )
+        #acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, p_:probs })
+        #acc_accumlate += sum( acc )/batch_size_f    
+    #print acc_accumlate / eval_num_f
+    #vgg.save_npy( sess, './synset.txt' )
 
 
 def probs_threshold(probs):
@@ -157,7 +157,6 @@ def probs_threshold2(probs):
         b[i] = idx
         #a += np.count_nonzero(probs[i])
     return b
-
 
 
 if __name__ == '__main__':
