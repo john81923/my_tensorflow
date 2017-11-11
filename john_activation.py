@@ -69,6 +69,7 @@ def _main():
     for epoch in range(200):
         print 'epoch {}'.format(epoch)
         shuffle(ids)
+        cost_ = 0
         for i in range( data_num/batch_size ): #data_num/batch_size )
             #print "{} in range of {}dd".format(i,data_num/batch_size)
             image_batch = []
@@ -86,10 +87,12 @@ def _main():
             image_batch = np.asarray(image_batch, dtype = 'float' )
             label_batch = np.asarray(label_batch, dtype = 'float' )
             # run
-            sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
+            sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True } )
+            cost_ += sess.run( cost, feed_dict = { images:image_batch, true_out: labbel_batch, train_mode:False } )
             if (i+1)%50==0:
                  eval_model(sess, vgg , images , train_mode)
-
+        print 'loss_per_epoch ', cost_ / ( data_num/ batch_size )
+            
 
 def eval_model(sess, vgg , images , train_mode):
     print 'start eval '
@@ -135,7 +138,7 @@ def eval_model(sess, vgg , images , train_mode):
         #acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, p_:probs })
         #acc_accumlate += sum( acc )/batch_size_f    
     #print acc_accumlate / eval_num_f
-    #vgg.save_npy( sess, './synset.txt' )
+    vgg.save_npy( sess, './act_map_sigmoid' )
 
 
 def probs_threshold(probs):
