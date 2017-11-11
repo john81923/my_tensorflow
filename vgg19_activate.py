@@ -71,7 +71,7 @@ class Vgg19:
         self.conv5_4 = self.conv_layer(self.conv5_3, 512, 512, "conv5_4")
         self.pool5 = self.max_pool(self.conv5_4, 'pool5')
         # activation map
-        self.act_map = self.conv_layer(self.conv5_5, 512, 1024, "act_map" )
+        self.act_map = self.conv_layer(self.pool5, 512, 1024, "act_map" )
         self.pool6 = self.max_pool(self.act_map,'pool6')
         gap = tf.reduce_mean(self.pool6 , (1,2) )
         gap_w = tf.get_variable('W', shape=[1024, 20], initializer=tf.random_normal_initializer(0., 0.01))

@@ -6,7 +6,7 @@ from skimage.transform import resize
 import cv2
 import numpy as np
 import DataFunc 
-import vgg19_trainable as vgg19
+import vgg19_activate as vgg19
 import utils
 from random import shuffle
 import random
