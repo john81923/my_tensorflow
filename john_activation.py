@@ -10,6 +10,7 @@ import vgg19_activate as vgg19
 import utils
 from random import shuffle
 import random
+from  cls_act_map import*
 
 # process from img.jpg to data_array , label.xml to label_vec
 def img_n_label(image_dir , anno_dir ):
@@ -57,7 +58,8 @@ def _main():
     train_mode = tf.placeholder( tf.bool )
     #
     # vgg19 model
-    vgg = vgg19.Vgg19('/home/master/05/john81923/vgg19.npy')
+    #vgg = vgg19.Vgg19('/home/master/05/john81923/vgg19.npy')
+    vgg = vgg19.Vgg19('./act_map_sigmoid_154epoch.npy' )
     vgg.build(images, train_mode)
     # cost
     cost = tf.reduce_sum(( vgg.prob - true_out)**2 )
@@ -66,6 +68,8 @@ def _main():
     sess.run( tf.global_variables_initializer() )
     # data and labels to batches for train
     print 'training start. total_training epoch = ', data_num / batch_size 
+    train_ = False
+    print 'now train ', train_ 
     for epoch in range(200):
         print 'epoch {}'.format(epoch)
         shuffle(ids)
@@ -87,12 +91,21 @@ def _main():
             image_batch = np.asarray(image_batch, dtype = 'float' )
             label_batch = np.asarray(label_batch, dtype = 'float' )
             # run
-            sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True } )
-            cost_ += sess.run( cost, feed_dict = { images:image_batch, true_out: labbel_batch, train_mode:False } )
-            if (i+1)%50==0:
-                 eval_model(sess, vgg , images , train_mode)
-        print 'loss_per_epoch ', cost_ / ( data_num/ batch_size )
-            
+            if train_ is True:
+                sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True } )
+                cost_ += sess.run( cost, feed_dict = { images:image_batch, true_out: label_batch, train_mode:False } )
+                if (i+1)%50==0:
+                     eval_model(sess, vgg , images , train_mode)
+            #print 'loss_per_epoch ', cost_ / ( data_num/ batch_size )
+            else:
+                x = tf.placeholder(tf.float32, (None, 224,224, 3))
+                y = 0
+                y_ = tf.placeholder(tf.int64, [None])
+                class_activation_map = get_class_map(label_batch, vgg.act_map, 224)
+                 
+                
+                inspect_class_activation_map(sess, class_activation_map, vgg.act_map, image_batch,
+                                                                 label_batch, 1, 1, x, y_, y)
 
 def eval_model(sess, vgg , images , train_mode):
     print 'start eval '
