@@ -89,7 +89,7 @@ def _main():
                 image_batch.append(image_data)
                 label_batch.append(label_vec)
             image_batch = np.asarray(image_batch, dtype = 'float' )
-            label_batch = np.asarray(label_batch, dtype = 'float' )
+            label_batch = np.asarray(label_batch, dtype = 'int' )
             # run
             if train_ is True:
                 sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True } )
