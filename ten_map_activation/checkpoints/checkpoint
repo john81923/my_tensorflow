@@ -1,0 +1,2 @@
+model_checkpoint_path: "mnist-cluttered-99900"
+all_model_checkpoint_paths: "mnist-cluttered-99900"
