@@ -59,7 +59,7 @@ def read_dataset(percentage=1.0, cutoff=0.7):
         if len(images) == max_images:
             break
     images = np.array(images)
-    print(images.shape)
+    print('image shapes ' ,images.shape)
     assert max_images == len(images)
     assert max_images == len(labels)
 
