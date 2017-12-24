@@ -1,5 +1,7 @@
 import tensorflow as tf
 import os
+import sys
+import argparse
 #import scipy.misc as scipy
 from scipy import stats
 from skimage.transform import resize
@@ -29,7 +31,7 @@ def label_to_vec(labels):
     return l_arr
 
 
-def _main():
+def _main( load_model, istrain):
     # paths 
     ids_path = '../data/VOCdevkit/VOC2007/ImageSets/Main/'
     anno_path = '../data/VOCdevkit/VOC2007/Annotations/'
@@ -57,7 +59,7 @@ def _main():
     train_mode = tf.placeholder( tf.bool )
     #
     # vgg19 model
-    vgg = vgg19.Vgg19('/home/master/05/john81923/cls_154epoch.npy')
+    vgg = vgg19.Vgg19(load_model)
     #vgg = vgg19.Vgg19( './epoch39.npy' )
     vgg.build(images, train_mode)
     
@@ -88,9 +90,10 @@ def _main():
             image_batch = np.asarray(image_batch, dtype = 'float' )
             label_batch = np.asarray(label_batch, dtype = 'float' )
             # run
-            #sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
-            #if (i+1)%60==0:
-            eval_model(sess, vgg , images , train_mode)
+            if istrain:
+                sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
+            else:
+                eval_model(sess, vgg , images , train_mode)
 
 
 def eval_model(sess, vgg , images , train_mode):
@@ -121,18 +124,32 @@ def eval_model(sess, vgg , images , train_mode):
             test_data = eval_data
         eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
         eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
-        conv5_4 = sess.run(vgg.conv5_4, feed_dict={ images: eval_dbatch, train_mode: False}) 
+        prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
         #conv5 shape 32,14,14,512
         #pool5 shape 32, 7, 7,512
-        print 'conv5_4 ', conv5_4
+        probs =  probs_threshold2(prob)
+        print 'probs ',probs
         p_ = tf.placeholder(tf.int32, [32])
         y_ = tf.placeholder(tf.float32, [32, 20])
         #correct_prediction = tf.equal( p_ ,y_)
         #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         #acc_accumlate += sess.run( accuracy, feed_dict={ p_: probs , y_: eval_lbatch })
         topFiver = tf.nn.in_top_k( y_ ,p_ ,1 )
+        acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, p_:probs })
+        acc_accumlate += sum( acc )/batch_size_f    
+    print acc_accumlate / eval_num_f
+    vgg.save_npy( sess, './synset.txt' )
 
 
+def probs_threshold(probs):
+    a = 0
+    b = np.zeros(20)
+    for i in range(probs.shape[0]):
+        idx = np.argmax( probs[i] )
+        #ddb[idx] = 1
+        probs[i] = idx
+        #a += np.count_nonzero(probs[i])
+    return probs
 
 def probs_threshold2(probs):
     a = 0
@@ -144,7 +161,12 @@ def probs_threshold2(probs):
         #a += np.count_nonzero(probs[i])
     return b
 
-
+def str2bool(v):
+     return v.lower() in ("yes","true","t","1")
 
 if __name__ == '__main__':
-    _main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--train', type=str2bool, default=True ,help='ILSVRC dataset dir')
+    parser.add_argument('--load', help='load model')
+    args = parser.parse_args()
+    _main(args.load, args.train)

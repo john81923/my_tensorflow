@@ -1,5 +1,7 @@
 import tensorflow as tf
 import os
+import sys
+import argparse
 #import scipy.misc as scipy
 from scipy import stats
 from skimage.transform import resize
@@ -29,7 +31,7 @@ def label_to_vec(labels):
     return l_arr
 
 
-def _main():
+def _main( load_model, istrain):
     # paths 
     ids_path = '../data/VOCdevkit/VOC2007/ImageSets/Main/'
     anno_path = '../data/VOCdevkit/VOC2007/Annotations/'
@@ -57,7 +59,7 @@ def _main():
     train_mode = tf.placeholder( tf.bool )
     #
     # vgg19 model
-    vgg = vgg19.Vgg19('/home/master/05/john81923/vgg19.npy')
+    vgg = vgg19.Vgg19(load_model)
     #vgg = vgg19.Vgg19( './epoch39.npy' )
     vgg.build(images, train_mode)
     
@@ -88,9 +90,10 @@ def _main():
             image_batch = np.asarray(image_batch, dtype = 'float' )
             label_batch = np.asarray(label_batch, dtype = 'float' )
             # run
-            sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
-            if (i+1)%60==0:
-                 eval_model(sess, vgg , images , train_mode)
+            if istrain:
+                sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
+            else:
+                eval_model(sess, vgg , images , train_mode)
 
 
 def eval_model(sess, vgg , images , train_mode):
@@ -125,7 +128,8 @@ def eval_model(sess, vgg , images , train_mode):
         #conv5 shape 32,14,14,512
         #pool5 shape 32, 7, 7,512
         probs =  probs_threshold2(prob)
-        #print 'probs ',probs
+        print 'probs ',probs
+        print 'label ',eval_lbatch
         p_ = tf.placeholder(tf.int32, [32])
         y_ = tf.placeholder(tf.float32, [32, 20])
         #correct_prediction = tf.equal( p_ ,y_)
@@ -158,7 +162,9 @@ def probs_threshold2(probs):
         #a += np.count_nonzero(probs[i])
     return b
 
-
-
 if __name__ == '__main__':
-    _main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--train', type=bool, default=True ,help='ILSVRC dataset dir')
+    parser.add_argument('--load', help='load model')
+    args = parser.parse_args()
+    _main(args.load, args.train)
