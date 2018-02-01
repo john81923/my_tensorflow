@@ -1,5 +1,0 @@
-numpy
-matplotlib
-natsort
-scikit_image
-# tensorflow

@@ -30,106 +30,66 @@ def label_to_vec(labels):
             l_arr[ int(i) ] += 1  
     return l_arr
 
-
-def _main( load_model, istrain):
+def get_img_ids( category ):
     # paths 
     ids_path = '../data/VOCdevkit/VOC2007/ImageSets/Main/'
-    anno_path = '../data/VOCdevkit/VOC2007/Annotations/'
-    image_path = '../data/VOCdevkit/VOC2007/JPEGImages/'
-    category = 'trainval'
     file_dir = os.path.join(ids_path, '{}.txt'.format(category))
     print file_dir
     with open(file_dir) as f:
         ids = []
         for line in f:
             ids.append(line[0:6])
-    data_num = len(ids)
-    #
-    # path to img and labels
-    #
-    print 'data_num : ', data_num
-    print len(DataFunc.classes) , DataFunc.classes
-    # train session 
-    batch_size = 32
-    sess = tf.Session()
-    # 
-    # placeholders
-    images = tf.placeholder( tf.float32, [batch_size, 224,224,3])
-    true_out = tf.placeholder( tf.float32, [batch_size, 20])
-    train_mode = tf.placeholder( tf.bool )
-    #
-    # vgg19 model
-    vgg = vgg19.Vgg19(load_model)
-    #vgg = vgg19.Vgg19( './epoch39.npy' )
-    vgg.build(images, train_mode)
-    
-    # cost
-    cost = tf.reduce_sum(( vgg.prob - true_out)**2 )
-    # train
-    train = tf.train.GradientDescentOptimizer( 0.0001).minimize( cost)
-    sess.run( tf.global_variables_initializer())
-    # data and labels to batches for train
-    print 'training start. total_training epoch = ', data_num / batch_size 
-    for epoch in range(200):
-        print 'epoch {}'.format(epoch)
-        shuffle(ids)
-        for i in range( data_num/batch_size ): #data_num/batch_size )
-            #print "{} in range of {}dd".format(i,data_num/batch_size)
-            image_batch = []
-            label_batch = []
-            rand_list = []
-            for rand in range (batch_size):
-               rand_list.append( random.randint( 0, data_num-1 ) )
-            for j in range (batch_size):
-                j_id = rand_list[ j ]
-                anno_dir_ = os.path.join(anno_path, '{}.xml'.format( ids[ j_id ]) )
-                image_dir_ = os.path.join(image_path, '{}.jpg'.format( ids[ int(j_id) ]) )
-                image_data, label_vec = img_n_label ( image_dir_, anno_dir_ )
-                image_batch.append(image_data)
-                label_batch.append(label_vec)
-            image_batch = np.asarray(image_batch, dtype = 'float' )
-            label_batch = np.asarray(label_batch, dtype = 'float' )
-            # run
-            if istrain:
-                sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
-            else:
-                eval_model(sess, vgg , images , train_mode)
+    return ids 
 
-
-def eval_model(sess, vgg , images , train_mode):
-    print 'start eval '
-    eval_path =  '../data/VOCdevkit/VOC2007/ImageSets/Main/val.txt'
+def get_batch( batch_size, rand_list, ids  ):
+    image_batch = []
+    label_batch = []
     anno_path = '../data/VOCdevkit/VOC2007/Annotations/'
     image_path = '../data/VOCdevkit/VOC2007/JPEGImages/'
+    for j in range (batch_size):
+        j_id = rand_list[ j ]
+        anno_dir_ = os.path.join(anno_path, '{}.xml'.format( ids[ j_id ]) )
+        image_dir_ = os.path.join(image_path, '{}.jpg'.format( ids[ int(j_id) ]) )
+        image_data, label_vec = img_n_label ( image_dir_, anno_dir_ )
+        image_batch.append(image_data)
+        label_batch.append(label_vec)
+    image_batch = np.asarray(image_batch, dtype = 'float' )
+    label_batch = np.asarray(label_batch, dtype = 'float' ) 
+    return image_batch, label_batch
+
+def get_eval_batch( batch_size, batch_id , eval_ids ):
+    eval_dbatch = []
+    eval_lbatch = []
+    anno_path = '../data/VOCdevkit/VOC2007/Annotations/'
+    image_path = '../data/VOCdevkit/VOC2007/JPEGImages/'
+    for i in range(batch_size):
+        ids_count = batch_id *batch_size + i
+        anno_dir_eval = os.path.join(anno_path, '{}.xml'.format( eval_ids[ ids_count ]) )
+        image_dir_eval = os.path.join(image_path, '{}.jpg'.format( eval_ids[ ids_count ]) )
+        eval_data ,eval_label =  img_n_label ( image_dir_eval, anno_dir_eval )
+        eval_dbatch.append(eval_data)
+        eval_lbatch.append(eval_label)
+    eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
+    eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
+    return eval_dbatch, eval_lbatch
+
+def eval_model(sess, vgg , images , train_mode , batch_size) :
+    print 'start eval '
     # eval data and labels
-    with open(eval_path) as ef:
-        eval_ids = []
-        for line in ef:
-            eval_ids.append(line[0:6])
-    batch_size = 32 
-    batch_size_f = 32.
-    acc_accumlate = 0.
+    catg = 'val'
+    eval_ids  = get_img_ids( catg)
     eval_num = len( eval_ids )/batch_size
-    eval_num_f = len( eval_ids )/batch_size_f
+    # 
+    acc_accumlate = 0.
     for j in range ( eval_num ):
-        eval_dbatch = []
-        eval_lbatch = []
-        for i in range(batch_size):
-            ids_count = j*batch_size + i
-            anno_dir_eval = os.path.join(anno_path, '{}.xml'.format( eval_ids[ ids_count ]) )
-            image_dir_eval = os.path.join(image_path, '{}.jpg'.format( eval_ids[ ids_count ]) )
-            eval_data ,eval_label =  img_n_label ( image_dir_eval, anno_dir_eval )
-            eval_dbatch.append(eval_data)
-            eval_lbatch.append(eval_label)
-            test_data = eval_data
-        eval_dbatch = np.asarray(eval_dbatch, dtype = 'float' )
-        eval_lbatch = np.asarray(eval_lbatch, dtype = 'float' )
+        eval_dbatch ,eval_lbatch = get_eval_batch( batch_size, j, eval_ids )
+        # 
         prob = sess.run(vgg.prob, feed_dict={ images: eval_dbatch, train_mode: False}) 
         #conv5 shape 32,14,14,512
         #pool5 shape 32, 7, 7,512
         probs =  probs_threshold2(prob)
-        print 'probs ',probs
-        print 'label ',eval_lbatch
+        #print 'probs ',probs
+        #print 'label ',eval_lbatch
         p_ = tf.placeholder(tf.int32, [32])
         y_ = tf.placeholder(tf.float32, [32, 20])
         #correct_prediction = tf.equal( p_ ,y_)
@@ -137,9 +97,51 @@ def eval_model(sess, vgg , images , train_mode):
         #acc_accumlate += sess.run( accuracy, feed_dict={ p_: probs , y_: eval_lbatch })
         topFiver = tf.nn.in_top_k( y_ ,p_ ,1 )
         acc = sess.run(topFiver, feed_dict = { y_:eval_lbatch, p_:probs })
-        acc_accumlate += sum( acc )/batch_size_f    
-    print acc_accumlate / eval_num_f
-    vgg.save_npy( sess, './synset.txt' )
+        acc_accumlate += sum( acc )/ float(batch_size)    
+    print acc_accumlate / float(eval_num)
+    #vgg.save_npy(sess, './cls_model' )
+
+def _main( load_model, istrain):
+    # train session 
+    batch_size = 32
+    sess = tf.Session()
+    # placeholders
+    images = tf.placeholder( tf.float32, [batch_size, 224,224,3])
+    true_out = tf.placeholder( tf.float32, [batch_size, 20])
+    train_mode = tf.placeholder( tf.bool )
+    # vgg19 model
+    vgg = vgg19.Vgg19(load_model)
+    vgg.build(images, train_mode)
+    # cost
+    cost = tf.reduce_sum(( vgg.prob - true_out)**2 )
+    # train
+    train = tf.train.GradientDescentOptimizer( 0.0001).minimize( cost)
+    sess.run( tf.global_variables_initializer())
+    # prepare data and label for training step
+    epoch_size = 200
+    if (args.tester == False):
+        # get imags id
+        catg = 'trainval'
+        ids = get_img_ids( catg )
+        data_num = len( ids )
+        # data and labels to batches for train
+        for epoch in range( epoch_size ):
+            shuffle(ids)
+            print 'epoch {}'.format( epoch)
+            for i in range( data_num/batch_size ): # total batch number
+                rand_list = []
+                for rand in range (batch_size):
+                    rand_list.append( random.randint( 0, data_num-1 ) )
+                # get each batch data 
+                image_batch, label_batch = get_batch( batch_size, rand_list, ids)    
+                if args.train:
+                    sess.run( train, feed_dict = { images: image_batch, true_out: label_batch, train_mode: True })
+                if( (i+1) % 60 ==0):
+                    eval_model(sess, vgg , images , train_mode , batch_size ) 
+    else:
+        print 'Tester ......' 
+
+
 
 
 def probs_threshold(probs):
@@ -161,10 +163,14 @@ def probs_threshold2(probs):
         b[i] = idx
         #a += np.count_nonzero(probs[i])
     return b
-
+     
+def str2bool(v):
+    return v.lower() in("yes","true","t","1")
+         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train', type=bool, default=True ,help='ILSVRC dataset dir')
-    parser.add_argument('--load', help='load model')
+    parser.add_argument('--train', type=str2bool, default=False )# training or eval
+    parser.add_argument('--load', help='load model')             # ~/cls_154epoch.npy
+    parser.add_argument('--tester', type=str2bool, default=False ) # go to tester part.
     args = parser.parse_args()
     _main(args.load, args.train)

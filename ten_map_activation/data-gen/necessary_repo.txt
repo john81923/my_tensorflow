@@ -1,2 +1,0 @@
-Please clone this repo and make sure you can run Torch/Lua code.
-https://github.com/deepmind/mnist-cluttered
