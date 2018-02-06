@@ -82,19 +82,25 @@ def _main( load_model, istrain):
                 print 'mean & covx ' + cate_name
                 print ''
 
-    else: 
+    else:
+        #
         print 'img testing'
-        with open('synset.txt') as name:
+        
+        with open('ddt_negative.txt') as name:
             for line in name:
-                cate_name = line.rstrip()
+                akk = line.split()
+                cate_name = akk[0]
+                label = akk[1]
                 cate_id =  get_common_object_id( cate_name + '_train')
                 _img_gen = get_img( cate_id )
                 print cate_name
                 print 'id length ', len( cate_id )
                 _img_data = np.reshape( _img_gen.next(),(1,224,224,3)).astype('float32')
-                
+
                 with open(  'saved_pk/' +cate_name + '_covx.pk', 'rb') as fp:
                     v = pickle.load( fp)
+                    #if label == '-1':
+                    #    _v =  -1 * v.T
                     _v = v.T
                 with open(  'saved_pk/' +cate_name + '_mean.pk', 'rb') as fm:
                     _mean_vec = pickle.load( fm)
@@ -103,8 +109,10 @@ def _main( load_model, istrain):
                 count = 0
                 for i in range( dcptr.shape[1]):
                     for j in range( dcptr.shape[2]):
-                        p1[i,j] = np.inner( _v[0], ( dcptr[0,i,j]-  _mean_vec ))
-                        if p1[i,j]>0:
+                        #p1[i,j] = np.inner( _v[0], ( dcptr[0,i,j]-  _mean_vec ))
+                        p1[i,j] = np.inner( np.ones(512) , ( dcptr[0,i,j] ))
+                        if p1[i,j]<0:
+                            p1[i,j] = 0
                             count = count +1
                 #find max and min 
                 print 'count ', count 
@@ -113,9 +121,19 @@ def _main( load_model, istrain):
                 print maxv, " ",minv
 
                 img_in = np.reshape( _img_data , (224,224,3))
-                p1 = scipy.misc.imresize( p1, (224,224) )
+                p1 = scipy.misc.imresize( p1, (224,224) ,interp='nearest' )
                 scipy.misc.imsave( './saved_DDT_img/'+ cate_name +'_imgDt.jpg', p1 )
                 scipy.misc.imsave( './saved_DDT_img/'+ cate_name +'_imgOr.jpg', img_in )
+
+def np_cov( smp ,sess, vgg, images  ):
+    covx = np.zeros( (512,512) ,)
+    img = get_img( smp )
+    for n in range( len(smp) ):
+        img_in = np.reshape( img.next(),(1,224,224,3)).astype('float32')
+        dcptr = sess.run(vgg.conv5_4, feed_dict={ images: img_in}) 
+        for i in range( dcptr.shape[1]):
+            for j in range( dcptr.shape[2] ):
+                covx = covx + np.cov(  )            
 
 def Cov_mat( mean_vec ,smp ,sess, vgg, images):
     covx = np.zeros( (512,512) ,)
